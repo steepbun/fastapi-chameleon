@@ -1,7 +1,7 @@
 import inspect
 import os
 from functools import wraps
-from typing import Optional, Union, Callable, Mapping
+from typing import Optional, Union, Callable
 
 import fastapi
 from chameleon import PageTemplateLoader, PageTemplate
@@ -87,7 +87,7 @@ def template(template_file: Optional[Union[Callable, str]] = None, mimetype: str
         def sync_view_method(*args, **kwargs):
             try:
                 response_val = f(*args, **kwargs)
-                return __render_response(template_file, response_val, mimetype, response_val.get('status_code', 200), response_val.get('headers', None))
+                return __render_response(template_file, response_val, mimetype)
             except FastAPIChameleonNotFoundException as nfe:
                 return __render_response(nfe.template_file, {}, 'text/html', 404)
             except FastAPIChameleonGenericException as nfe:
@@ -97,7 +97,7 @@ def template(template_file: Optional[Union[Callable, str]] = None, mimetype: str
         async def async_view_method(*args, **kwargs):
             try:
                 response_val = await f(*args, **kwargs)
-                return __render_response(template_file, response_val, mimetype, response_val.get('status_code', 200), response_val.get('headers', None))
+                return __render_response(template_file, response_val, mimetype)
             except FastAPIChameleonNotFoundException as nfe:
                 return __render_response(nfe.template_file, {}, 'text/html', 404)
             except FastAPIChameleonGenericException as nfe:
@@ -111,7 +111,7 @@ def template(template_file: Optional[Union[Callable, str]] = None, mimetype: str
     return response_inner(wrapped_function) if wrapped_function else response_inner
 
 
-def __render_response(template_file, response_val, mimetype, status_code: int = 200, headers: Mapping[str, str] | None = None) -> fastapi.Response:
+def __render_response(template_file, response_val, mimetype, status_code: int = 200) -> fastapi.Response:
     # source skip: assign-if-exp
     if isinstance(response_val, fastapi.Response):
         return response_val
@@ -123,7 +123,7 @@ def __render_response(template_file, response_val, mimetype, status_code: int = 
     model = response_val
 
     html = render(template_file, **model)
-    return fastapi.Response(content=html, media_type=mimetype, status_code=status_code, headers=headers)
+    return fastapi.Response(content=html, media_type=mimetype, status_code=response_val.get('status_code',status_code), headers=response_val.get('headers',None))
 
 
 def not_found(four04template_file: str = 'errors/404.pt'):
