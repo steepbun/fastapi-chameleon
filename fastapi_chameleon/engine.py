@@ -84,20 +84,20 @@ def template(template_file: Optional[Union[Callable, str]] = None, mimetype: str
                 template_file = f'{module}/{view}.pt'
 
         @wraps(f)
-        def sync_view_method(*args, status_code:int=200, **kwargs):
+        def sync_view_method(*args, **kwargs):
             try:
                 response_val = f(*args, **kwargs)
-                return __render_response(template_file, response_val, mimetype, status_code)
+                return __render_response(template_file, response_val, mimetype, response_val.get('status_code', 200))
             except FastAPIChameleonNotFoundException as nfe:
                 return __render_response(nfe.template_file, {}, 'text/html', 404)
             except FastAPIChameleonGenericException as nfe:
                 return __render_response(nfe.template_file, {}, 'text/html', nfe.status_code)
 
         @wraps(f)
-        async def async_view_method(*args, status_code:int=200, **kwargs):
+        async def async_view_method(*args, **kwargs):
             try:
                 response_val = await f(*args, **kwargs)
-                return __render_response(template_file, response_val, mimetype, status_code)
+                return __render_response(template_file, response_val, mimetype, response_val.get('status_code', 200))
             except FastAPIChameleonNotFoundException as nfe:
                 return __render_response(nfe.template_file, {}, 'text/html', 404)
             except FastAPIChameleonGenericException as nfe:
